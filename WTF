@@ -47,8 +47,6 @@ else
     print("Icon not found.")
 end
 
-
--- Détruire l'ancien Orion s'il existe déjà
 local OldOrion = (gethui and gethui() or game:GetService("CoreGui")):FindFirstChild("Orion")
 if OldOrion then
 	OldOrion:Destroy()
@@ -69,7 +67,6 @@ function OrionLib:IsRunning()
 	else
 		return Orion.Parent == game:GetService("CoreGui")
 	end
-
 end
 
 local function AddConnection(Signal, Function)
@@ -424,8 +421,15 @@ function OrionLib:MakeNotification(NotificationConfig)
 				TextWrapped = true
 			})
 		})
-		TweenService:Create(NotificationFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Position = UDim2.new(0, 0, 0, 0)}):Play()
+
+		-- ✅ ANIMATION NOTIFICATION SLIDE-IN
+		TweenService:Create(NotificationFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+			Position = UDim2.new(0, 0, 0, 0)
+		}):Play()
+
 		wait(NotificationConfig.Time - 0.88)
+
+		-- ✅ ANIMATION NOTIFICATION FADE-OUT
 		TweenService:Create(NotificationFrame.Icon, TweenInfo.new(0.4, Enum.EasingStyle.Quint), {ImageTransparency = 1}):Play()
 		TweenService:Create(NotificationFrame, TweenInfo.new(0.8, Enum.EasingStyle.Quint), {BackgroundTransparency = 0.6}):Play()
 		wait(0.3)
@@ -433,8 +437,14 @@ function OrionLib:MakeNotification(NotificationConfig)
 		TweenService:Create(NotificationFrame.Title, TweenInfo.new(0.6, Enum.EasingStyle.Quint), {TextTransparency = 0.4}):Play()
 		TweenService:Create(NotificationFrame.Content, TweenInfo.new(0.6, Enum.EasingStyle.Quint), {TextTransparency = 0.5}):Play()
 		wait(0.05)
-		NotificationFrame:TweenPosition(UDim2.new(1, 20, 0, 0),'In','Quint',0.8,true)
-		wait(1.35)
+
+		-- ✅ ANIMATION NOTIFICATION SLIDE-OUT
+		TweenService:Create(NotificationFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+			Position = UDim2.new(1, -55, 0, 0),
+			BackgroundTransparency = 1
+		}):Play()
+
+		wait(0.5)
 		NotificationFrame:Destroy()
 	end)
 end    
@@ -461,17 +471,16 @@ function OrionLib:MakeWindow(WindowConfig)
 	local UIHidden = false
 
 	-- ================================================================
-	-- SYSTEME D'ANIMATION MEGA — avec queue pendant le loading
+	-- SYSTÈME D'ANIMATION MEGA — avec queue pendant le loading
 	-- ================================================================
 	local _introIndex = 0
 	local _isLoading = false
-	local _animQueue = {} -- queue d'animations a jouer apres le loading
-	local _lastElementTime = 0 -- timestamp du dernier element cree
-	local _loadOverlay = nil -- reference a l'overlay pour le detruire apres
-	local _loadTransitionOut = nil -- fonction pour lancer la transition out
+	local _animQueue = {}
+	local _lastElementTime = 0
+	local _loadOverlay = nil
+	local _loadTransitionOut = nil
 	local _glitchCharsAnim = {"#","@","!","$","%","&","?","*","/","=","-","+","~","^","<",">","|","\\",":","[","]"}
 
-	-- Fonction qui joue l'animation d'un element (appelee directement OU depuis la queue)
 	local function _PlayElementAnim(frame, elementType, index)
 		local delay = index * 0.04
 
@@ -502,13 +511,11 @@ function OrionLib:MakeWindow(WindowConfig)
 		task.spawn(function()
 			task.wait(delay)
 
-			-- Phase 1: Grow avec elastic bounce
 			TweenService:Create(frame, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
 				Size = origSize,
 				BackgroundTransparency = origTransparency
 			}):Play()
 
-			-- Flash de couleur
 			task.spawn(function()
 				local origBG = frame.BackgroundColor3
 				frame.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
@@ -520,14 +527,12 @@ function OrionLib:MakeWindow(WindowConfig)
 
 			task.wait(0.08)
 
-			-- Phase 2: Reveal enfants
 			for _, info in next, hiddenDescs do
 				TweenService:Create(info.obj, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
 					[info.prop] = info.orig
 				}):Play()
 			end
 
-			-- Phase 3: Glitch texte
 			if #textDescs > 0 then
 				task.spawn(function()
 					for _ = 1, 3 do
@@ -554,7 +559,6 @@ function OrionLib:MakeWindow(WindowConfig)
 				end)
 			end
 
-			-- Phase 4: Glow sweep
 			task.spawn(function()
 				local sweep = Instance.new("Frame")
 				sweep.Size = UDim2.new(0, 3, 1, 0)
@@ -572,7 +576,6 @@ function OrionLib:MakeWindow(WindowConfig)
 				sweep:Destroy()
 			end)
 
-			-- Phase 5: Underline glow
 			task.spawn(function()
 				local underline = Instance.new("Frame")
 				underline.Size = UDim2.new(0, 0, 0, 1)
@@ -616,7 +619,6 @@ function OrionLib:MakeWindow(WindowConfig)
 
 			task.wait(0.06)
 
-			-- Icon pop pulse
 			TweenService:Create(tabFrame.Ico, TweenInfo.new(0.15, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
 				ImageTransparency = isFirst and 0 or 0.4,
 				Size = UDim2.new(0, 22, 0, 22)
@@ -626,7 +628,6 @@ function OrionLib:MakeWindow(WindowConfig)
 				Size = UDim2.new(0, 18, 0, 18)
 			}):Play()
 
-			-- Glitch reveal texte
 			local finalText = tabFrame.Title.Text
 			local targetTransp = isFirst and 0 or 0.4
 			TweenService:Create(tabFrame.Title, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
@@ -648,7 +649,6 @@ function OrionLib:MakeWindow(WindowConfig)
 				tabFrame.Title.Text = finalText
 			end)
 
-			-- Highlight flash
 			task.spawn(function()
 				local highlight = Instance.new("Frame")
 				highlight.Size = UDim2.new(1, 0, 1, 0)
@@ -665,7 +665,6 @@ function OrionLib:MakeWindow(WindowConfig)
 				highlight:Destroy()
 			end)
 
-			-- Side accent line
 			task.spawn(function()
 				local accent = Instance.new("Frame")
 				accent.Size = UDim2.new(0, 2, 0, 0)
@@ -752,12 +751,10 @@ function OrionLib:MakeWindow(WindowConfig)
 		end)
 	end
 
-	-- Wrappers publics qui check _isLoading
 	local function AnimateElementIntro(frame, elementType)
 		_introIndex = _introIndex + 1
 		_lastElementTime = tick()
 		if _isLoading then
-			-- Pendant le loading: cacher l'element, mettre en queue
 			frame.Visible = false
 			table.insert(_animQueue, {type = "element", frame = frame, elementType = elementType, index = _introIndex})
 		else
@@ -841,14 +838,12 @@ function OrionLib:MakeWindow(WindowConfig)
 			Parent = SearchBar
 		}), "Second")
 
-		-- Ligne verticale droite
 		AddThemeObject(SetProps(MakeElement("Frame"), {
 			Size = UDim2.new(0, 1, 1, 0),
 			Position = UDim2.new(1, -1, 0, 0),
 			ZIndex = 2
 		}), "Stroke").Parent = SearchInner
 
-		-- Ligne horizontale bas
 		AddThemeObject(SetProps(MakeElement("Frame"), {
 			Size = UDim2.new(1, 0, 0, 1),
 			Position = UDim2.new(0, 0, 1, -1),
@@ -978,7 +973,6 @@ function OrionLib:MakeWindow(WindowConfig)
 		}),
 	}), "Second")
 
-	-- Intégration de la SearchBar dans WindowStuff
 	if WindowConfig.SearchEnabled and SearchBar then
 		SearchBar.Parent = WindowStuff
 		SearchBar.Position = UDim2.new(0, 0, 0, 0)
@@ -1070,8 +1064,16 @@ function OrionLib:MakeWindow(WindowConfig)
 		MakeElement("Corner", 1)
 	})
 
+	-- ✅ ANIMATION CLOSE BUTTON
 	AddConnection(CloseBtn.MouseButton1Up, function()
 		if _isLoading then return end
+		
+		TweenService:Create(MainWindow, TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {
+			BackgroundTransparency = 1,
+			Size = UDim2.new(0, 200, 0, 50)
+		}):Play()
+		
+		task.wait(0.4)
 		MainWindow.Visible = false
 		MobileReopenButton.Visible = true
 		UIHidden = true
@@ -1086,23 +1088,34 @@ function OrionLib:MakeWindow(WindowConfig)
 	AddConnection(UserInputService.InputBegan, function(Input)
 		if Input.KeyCode == Enum.KeyCode.LeftControl and UIHidden == true then
 			MainWindow.Visible = true
+			MainWindow.BackgroundTransparency = 0
+			TweenService:Create(MainWindow, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+				Size = UDim2.new(0, 615, 0, 344)
+			}):Play()
 			MobileReopenButton.Visible = false
+			UIHidden = false
 		end
 	end)
 	
 	AddConnection(MobileReopenButton.Activated, function()
 		MainWindow.Visible = true
+		MainWindow.BackgroundTransparency = 0
+		TweenService:Create(MainWindow, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+			Size = UDim2.new(0, 615, 0, 344)
+		}):Play()
 		MobileReopenButton.Visible = false
+		UIHidden = false
 	end)
 
 	MakeDraggable(MobileReopenButton, MobileReopenButton)
 
+	-- ✅ ANIMATION MINIMIZE BUTTON
 	AddConnection(MinimizeBtn.MouseButton1Up, function()
 		if _isLoading then return end
 		if Minimized then
 			TweenService:Create(MainWindow, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Size = UDim2.new(0, 615, 0, 344)}):Play()
 			MinimizeBtn.Ico.Image = "rbxassetid://7072719338"
-			wait(.02)
+			task.wait(0.1)
 			MainWindow.ClipsDescendants = false
 			WindowStuff.Visible = true
 			WindowTopBarLine.Visible = true
@@ -1112,19 +1125,15 @@ function OrionLib:MakeWindow(WindowConfig)
 			MinimizeBtn.Ico.Image = "rbxassetid://7072720870"
 
 			TweenService:Create(MainWindow, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Size = UDim2.new(0, WindowName.TextBounds.X + 140, 0, 50)}):Play()
-			wait(0.1)
+			task.wait(0.1)
 			WindowStuff.Visible = false	
 		end
 		Minimized = not Minimized    
 	end)
 
-	local LoadingSteps = {}
-	local LoadingPercent = 0
-
-	local function AddLoadingStep(Text)
-		table.insert(LoadingSteps, Text)
-	end
-
+	-- ================================================================
+	-- REAL LOADING SEQUENCE WITH PROPER INITIALIZATION
+	-- ================================================================
 	local function LoadSequence()
 		_isLoading = true
 		_animQueue = {}
@@ -1134,7 +1143,27 @@ function OrionLib:MakeWindow(WindowConfig)
 		local glitchChars = {"#","@","!","$","%","&","?","*","/","=","-","+","~","^","<",">","|","\\",":","[","]"}
 		local introText = WindowConfig.IntroText or "Orion Library"
 
-		-- ========== LIGHTING EFFECTS ==========
+		-- ✅ PHASE 1: PRELOAD RESOURCES EN ARRIERE-PLAN
+		local preloadTasks = {}
+		task.spawn(function()
+			-- Charger les icones
+			for iconName, _ in pairs(Icons) do
+				table.insert(preloadTasks, iconName)
+			end
+			
+			-- Compiler les tweens (warm up)
+			for i = 1, 50 do
+				TweenService:Create(MainWindow, TweenInfo.new(0.001), {Size = MainWindow.Size}):Play()
+			end
+			
+			-- Pre-cache les connexions
+			for i = 1, 20 do
+				local fake = Instance.new("Frame")
+				fake:Destroy()
+			end
+		end)
+
+		-- ✅ PHASE 2: LIGHTING EFFECTS
 		local BlurEffect = Instance.new("BlurEffect")
 		BlurEffect.Size = 0
 		BlurEffect.Parent = game:GetService("Lighting")
@@ -1146,7 +1175,7 @@ function OrionLib:MakeWindow(WindowConfig)
 		ColorFX.Saturation = -0.4
 		ColorFX.Parent = game:GetService("Lighting")
 
-		-- ========== WINDOW SCALE-IN ==========
+		-- ✅ PHASE 3: WINDOW SCALE-IN
 		MainWindow.Size = UDim2.new(0, 615 * 0.8, 0, 344 * 0.8)
 		MainWindow.Position = UDim2.new(0.5, -307 * 0.8, 0.5, -172 * 0.8)
 		MainWindow.BackgroundTransparency = 1
@@ -1158,7 +1187,7 @@ function OrionLib:MakeWindow(WindowConfig)
 			BackgroundTransparency = 0
 		}):Play()
 
-		-- ========== OVERLAY PRINCIPAL ==========
+		-- ✅ PHASE 4: LOADING OVERLAY
 		local LoadOverlay = Instance.new("Frame")
 		LoadOverlay.Size = UDim2.new(1, 0, 1, 0)
 		LoadOverlay.Position = UDim2.new(0, 0, 0, 0)
@@ -1175,7 +1204,7 @@ function OrionLib:MakeWindow(WindowConfig)
 		OverlayStroke.Transparency = 0.5
 		OverlayStroke.Parent = LoadOverlay
 
-			-- ========== 1. GRID BACKGROUND (lignes cyber qui s'etendent) ==========
+		-- ✅ GRID BACKGROUND
 		task.spawn(function()
 			for row = 1, 6 do
 				if not LoadOverlay or not LoadOverlay.Parent then break end
@@ -1209,7 +1238,7 @@ function OrionLib:MakeWindow(WindowConfig)
 			end
 		end)
 
-			-- ========== 2. DOUBLE SCANLINE (2 lignes qui balayent) ==========
+		-- ✅ SCANLINES
 		local scanlines = {}
 		local scanData = {
 			{h = 2, col = Color3.fromRGB(255, 255, 255), t = 0.85, speed = 2.2, dir = 1},
@@ -1238,7 +1267,7 @@ function OrionLib:MakeWindow(WindowConfig)
 			end)
 		end
 
-			-- ========== 3. PARTICLES (20 particules multi-couleur) ==========
+		-- ✅ PARTICLES
 		task.spawn(function()
 			local pColors = {
 				Color3.fromRGB(255, 255, 255),
@@ -1278,7 +1307,7 @@ function OrionLib:MakeWindow(WindowConfig)
 			end
 		end)
 
-		-- ========== 4. CORNER DECORATIONS (coins lumineux + diagonales) ==========
+		-- ✅ CORNERS
 		local corners = {
 			{pos = UDim2.new(0, 4, 0, 4), anchorX = 0, anchorY = 0},
 			{pos = UDim2.new(1, -4, 0, 4), anchorX = 1, anchorY = 0},
@@ -1311,34 +1340,9 @@ function OrionLib:MakeWindow(WindowConfig)
 			TweenService:Create(cornerV, TweenInfo.new(0.6, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
 				Size = UDim2.new(0, 1, 0, 28)
 			}):Play()
-
-			-- Corner glow dot
-			task.spawn(function()
-				task.wait(0.5)
-				local cornerDot = Instance.new("Frame")
-				cornerDot.Size = UDim2.new(0, 4, 0, 4)
-				cornerDot.Position = c.pos
-				cornerDot.AnchorPoint = Vector2.new(c.anchorX, c.anchorY)
-				cornerDot.BackgroundColor3 = Color3.fromRGB(150, 180, 255)
-				cornerDot.BackgroundTransparency = 0.3
-				cornerDot.BorderSizePixel = 0
-				cornerDot.ZIndex = 1002
-				cornerDot.Parent = LoadOverlay
-				Instance.new("UICorner", cornerDot).CornerRadius = UDim.new(1, 0)
-				while cornerDot and cornerDot.Parent do
-					TweenService:Create(cornerDot, TweenInfo.new(0.5, Enum.EasingStyle.Sine), {
-						BackgroundTransparency = 0.8
-					}):Play()
-					task.wait(0.5)
-					TweenService:Create(cornerDot, TweenInfo.new(0.5, Enum.EasingStyle.Sine), {
-						BackgroundTransparency = 0.3
-					}):Play()
-					task.wait(0.5)
-				end
-			end)
 		end
 
-		-- ========== 5. ROTATING LOADING SPINNER (cercle qui tourne) ==========
+		-- ✅ SPINNER
 		task.spawn(function()
 			local spinContainer = Instance.new("Frame")
 			spinContainer.Size = UDim2.new(0, 80, 0, 80)
@@ -1348,7 +1352,6 @@ function OrionLib:MakeWindow(WindowConfig)
 			spinContainer.ZIndex = 1003
 			spinContainer.Parent = LoadOverlay
 
-				-- Spinning dots around center
 			local dotCount = 8
 			for di = 1, dotCount do
 				local angle = (di - 1) * (math.pi * 2 / dotCount)
@@ -1367,7 +1370,6 @@ function OrionLib:MakeWindow(WindowConfig)
 				Instance.new("UICorner", spinDot).CornerRadius = UDim.new(1, 0)
 			end
 
-			-- Animate rotation by cycling opacity
 			local step = 0
 			while spinContainer and spinContainer.Parent do
 				step = step + 1
@@ -1382,7 +1384,7 @@ function OrionLib:MakeWindow(WindowConfig)
 			end
 		end)
 
-			-- ========== 6. PULSE WAVES (ondes qui emanent du centre) ==========
+		-- ✅ PULSE WAVES
 		task.spawn(function()
 			task.wait(0.3)
 			for wave = 1, 4 do
@@ -1415,7 +1417,7 @@ function OrionLib:MakeWindow(WindowConfig)
 			end
 		end)
 
-		-- ========== 7. INTRO ICON — elastic pop + pulse + multi-glow + flicker ==========
+		-- ✅ INTRO ICON
 		local IntroIcon = Instance.new("ImageLabel")
 		IntroIcon.Size = UDim2.new(0, 0, 0, 0)
 		IntroIcon.Position = UDim2.new(0.5, 0, 0.26, 0)
@@ -1431,7 +1433,6 @@ function OrionLib:MakeWindow(WindowConfig)
 			Size = UDim2.new(0, 52, 0, 52)
 		}):Play()
 
-			-- 3 glow rings en cascade
 		for ring = 1, 3 do
 			task.spawn(function()
 				task.wait(0.12 * ring)
@@ -1461,7 +1462,6 @@ function OrionLib:MakeWindow(WindowConfig)
 			end)
 		end
 
-		-- Icon breathing pulse
 		task.spawn(function()
 			task.wait(0.7)
 			while IntroIcon and IntroIcon.Parent do
@@ -1478,30 +1478,7 @@ function OrionLib:MakeWindow(WindowConfig)
 			end
 		end)
 
-			-- Icon glitch flicker
-		task.spawn(function()
-			task.wait(0.5)
-			for _ = 1, 6 do
-				if not IntroIcon or not IntroIcon.Parent then break end
-				IntroIcon.ImageTransparency = math.random() * 0.4 + 0.1
-				task.wait(0.03)
-				IntroIcon.ImageTransparency = 0
-				task.wait(math.random() * 0.25 + 0.1)
-			end
-		end)
-
-		-- Icon color flash
-		task.spawn(function()
-			task.wait(0.4)
-			while IntroIcon and IntroIcon.Parent do
-				IntroIcon.ImageColor3 = Color3.fromRGB(200, 220, 255)
-				task.wait(0.06)
-				IntroIcon.ImageColor3 = Color3.fromRGB(255, 255, 255)
-				task.wait(math.random() * 1.0 + 0.5)
-			end
-		end)
-
-		-- ========== 8. INTRO TEXT — typewriter glitch reveal + cursor ==========
+		-- ✅ INTRO TEXT
 		local IntroLabel = Instance.new("TextLabel")
 		IntroLabel.Size = UDim2.new(1, -40, 0, 28)
 		IntroLabel.Position = UDim2.new(0.5, 0, 0.26, 42)
@@ -1514,29 +1491,6 @@ function OrionLib:MakeWindow(WindowConfig)
 		IntroLabel.ZIndex = 1007
 		IntroLabel.Parent = LoadOverlay
 
-		local Cursor = Instance.new("TextLabel")
-		Cursor.Size = UDim2.new(0, 10, 0, 22)
-		Cursor.Position = UDim2.new(0.5, 0, 0.26, 42)
-		Cursor.AnchorPoint = Vector2.new(0.5, 0)
-		Cursor.BackgroundTransparency = 1
-		Cursor.TextColor3 = Color3.fromRGB(150, 180, 255)
-		Cursor.Font = Enum.Font.FredokaOne
-		Cursor.TextSize = 22
-		Cursor.Text = "|"
-		Cursor.ZIndex = 1007
-		Cursor.Parent = LoadOverlay
-
-		-- Cursor blink
-		task.spawn(function()
-			while Cursor and Cursor.Parent do
-				Cursor.TextTransparency = 0
-				task.wait(0.35)
-				Cursor.TextTransparency = 1
-				task.wait(0.25)
-			end
-		end)
-
-		-- Typewriter avec glitch par lettre
 		task.spawn(function()
 			task.wait(0.35)
 			for i = 1, #introText do
@@ -1560,7 +1514,6 @@ function OrionLib:MakeWindow(WindowConfig)
 				IntroLabel.Text = string.sub(introText, 1, i)
 				task.wait(0.03)
 			end
-			-- Final glitch burst
 			for _ = 1, 6 do
 				local g = ""
 				for c = 1, #introText do
@@ -1575,207 +1528,9 @@ function OrionLib:MakeWindow(WindowConfig)
 			end
 			IntroLabel.Text = introText
 			task.wait(0.5)
-			if Cursor and Cursor.Parent then Cursor:Destroy() end
 		end)
 
-		-- ========== 9. CHROMATIC ABERRATION TEXT (texte decale rouge/bleu) ==========
-		local ChromaRed = Instance.new("TextLabel")
-		ChromaRed.Size = UDim2.new(1, -40, 0, 28)
-		ChromaRed.Position = UDim2.new(0.5, -2, 0.26, 41)
-		ChromaRed.AnchorPoint = Vector2.new(0.5, 0)
-		ChromaRed.BackgroundTransparency = 1
-		ChromaRed.TextColor3 = Color3.fromRGB(255, 50, 50)
-		ChromaRed.TextTransparency = 0.85
-		ChromaRed.Font = Enum.Font.FredokaOne
-		ChromaRed.TextSize = 22
-		ChromaRed.Text = ""
-		ChromaRed.ZIndex = 1006
-		ChromaRed.Parent = LoadOverlay
-
-		local ChromaBlue = Instance.new("TextLabel")
-		ChromaBlue.Size = UDim2.new(1, -40, 0, 28)
-		ChromaBlue.Position = UDim2.new(0.5, 2, 0.26, 43)
-		ChromaBlue.AnchorPoint = Vector2.new(0.5, 0)
-		ChromaBlue.BackgroundTransparency = 1
-		ChromaBlue.TextColor3 = Color3.fromRGB(50, 100, 255)
-		ChromaBlue.TextTransparency = 0.85
-		ChromaBlue.Font = Enum.Font.FredokaOne
-		ChromaBlue.TextSize = 22
-		ChromaBlue.Text = ""
-		ChromaBlue.ZIndex = 1006
-		ChromaBlue.Parent = LoadOverlay
-
-		-- Sync chroma text with main
-		task.spawn(function()
-			while IntroLabel and IntroLabel.Parent do
-				ChromaRed.Text = IntroLabel.Text
-				ChromaBlue.Text = IntroLabel.Text
-				task.wait(0.03)
-			end
-		end)
-
-		-- Chromatic pulse (separation qui varie)
-		task.spawn(function()
-			while ChromaRed and ChromaRed.Parent do
-				TweenService:Create(ChromaRed, TweenInfo.new(0.3, Enum.EasingStyle.Sine), {
-					Position = UDim2.new(0.5, -3, 0.26, 40),
-					TextTransparency = 0.75
-				}):Play()
-				TweenService:Create(ChromaBlue, TweenInfo.new(0.3, Enum.EasingStyle.Sine), {
-					Position = UDim2.new(0.5, 3, 0.26, 44),
-					TextTransparency = 0.75
-				}):Play()
-				task.wait(0.3)
-				TweenService:Create(ChromaRed, TweenInfo.new(0.3, Enum.EasingStyle.Sine), {
-					Position = UDim2.new(0.5, -1, 0.26, 41),
-					TextTransparency = 0.9
-				}):Play()
-				TweenService:Create(ChromaBlue, TweenInfo.new(0.3, Enum.EasingStyle.Sine), {
-					Position = UDim2.new(0.5, 1, 0.26, 43),
-					TextTransparency = 0.9
-				}):Play()
-				task.wait(0.3)
-			end
-		end)
-
-		-- ========== 10. SUBTITLE TEXT ==========
-		local SubLabel = Instance.new("TextLabel")
-		SubLabel.Size = UDim2.new(1, -80, 0, 14)
-		SubLabel.Position = UDim2.new(0.5, 0, 0.26, 72)
-		SubLabel.AnchorPoint = Vector2.new(0.5, 0)
-		SubLabel.BackgroundTransparency = 1
-		SubLabel.TextColor3 = Color3.fromRGB(70, 70, 85)
-		SubLabel.Font = Enum.Font.FredokaOne
-		SubLabel.TextSize = 10
-		SubLabel.Text = ""
-		SubLabel.ZIndex = 1005
-		SubLabel.Parent = LoadOverlay
-
-		task.spawn(function()
-			task.wait(1.2)
-			local subText = "v4.0 // PREMIUM EDITION"
-			for i = 1, #subText do
-				if not SubLabel or not SubLabel.Parent then break end
-				SubLabel.Text = string.sub(subText, 1, i)
-				task.wait(0.02)
-			end
-		end)
-
-		-- ========== 11. TRIPLE SEPARATOR LINES ==========
-		local sepLines = {}
-		for si = 1, 3 do
-			local sep = Instance.new("Frame")
-			sep.Size = UDim2.new(0, 0, 0, 1)
-			sep.Position = UDim2.new(0.5, 0, 0.52, (si - 1) * 3)
-			sep.AnchorPoint = Vector2.new(0.5, 0.5)
-			sep.BackgroundColor3 = Color3.fromRGB(55 - si * 8, 55 - si * 8, 70 - si * 8)
-			sep.BorderSizePixel = 0
-			sep.ZIndex = 1004
-			sep.Parent = LoadOverlay
-			table.insert(sepLines, sep)
-			local targetWidth = 0.7 - si * 0.12
-			task.spawn(function()
-				task.wait(si * 0.1)
-				TweenService:Create(sep, TweenInfo.new(0.7, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-					Size = UDim2.new(targetWidth, 0, 0, 1)
-				}):Play()
-			end)
-		end
-
-		-- ========== 12. STATUS TEXT avec glitch cycling + icone + log lines ==========
-		local StatusIcon = Instance.new("TextLabel")
-		StatusIcon.Size = UDim2.new(0, 14, 0, 14)
-		StatusIcon.Position = UDim2.new(0.5, -95, 0.52, 12)
-		StatusIcon.AnchorPoint = Vector2.new(0.5, 0)
-		StatusIcon.BackgroundTransparency = 1
-		StatusIcon.TextColor3 = Color3.fromRGB(80, 80, 95)
-		StatusIcon.Font = Enum.Font.Code
-		StatusIcon.TextSize = 12
-		StatusIcon.Text = ">"
-		StatusIcon.ZIndex = 1005
-		StatusIcon.Parent = LoadOverlay
-
-		task.spawn(function()
-			while StatusIcon and StatusIcon.Parent do
-				StatusIcon.TextTransparency = 0
-				task.wait(0.4)
-				StatusIcon.TextTransparency = 0.5
-				task.wait(0.25)
-			end
-		end)
-
-		local StatusLabel = Instance.new("TextLabel")
-		StatusLabel.Size = UDim2.new(0.5, 0, 0, 14)
-		StatusLabel.Position = UDim2.new(0.5, -80, 0.52, 12)
-		StatusLabel.AnchorPoint = Vector2.new(0, 0)
-		StatusLabel.BackgroundTransparency = 1
-		StatusLabel.TextColor3 = Color3.fromRGB(80, 80, 95)
-		StatusLabel.Font = Enum.Font.Code
-		StatusLabel.TextSize = 10
-		StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
-		StatusLabel.Text = ""
-		StatusLabel.ZIndex = 1005
-		StatusLabel.Parent = LoadOverlay
-
-			local statusMessages = {
-			{text = "Initializing core systems...", color = Color3.fromRGB(80, 80, 95)},
-			{text = "Loading UI modules...", color = Color3.fromRGB(80, 80, 95)},
-			{text = "Building interface layout...", color = Color3.fromRGB(80, 80, 95)},
-			{text = "Injecting theme engine...", color = Color3.fromRGB(80, 80, 95)},
-			{text = "Binding input handlers...", color = Color3.fromRGB(80, 80, 95)},
-			{text = "Finalizing boot sequence...", color = Color3.fromRGB(80, 80, 95)},
-			{text = "System ready.", color = Color3.fromRGB(80, 255, 120)},
-		}
-
-		-- Log lines qui s'accumulent au dessus du status
-		local logLines = {}
-		task.spawn(function()
-			for idx, msgData in next, statusMessages do
-				if not StatusLabel or not StatusLabel.Parent then break end
-				-- Glitch transition
-				for _ = 1, 4 do
-					local g = ""
-					for c = 1, #msgData.text do
-						if math.random() < 0.5 then
-							g = g .. glitchChars[math.random(1, #glitchChars)]
-						else
-							g = g .. string.sub(msgData.text, c, c)
-						end
-					end
-					StatusLabel.Text = g
-					task.wait(0.02)
-				end
-				StatusLabel.Text = msgData.text
-				StatusLabel.TextColor3 = msgData.color
-
-				-- Push old status to log line above
-				if idx > 1 then
-					task.spawn(function()
-						local logLine = Instance.new("TextLabel")
-						logLine.Size = UDim2.new(0.5, 0, 0, 9)
-						logLine.Position = UDim2.new(0.5, -80, 0.52, 12 - (idx - 1) * 10)
-						logLine.AnchorPoint = Vector2.new(0, 0)
-						logLine.BackgroundTransparency = 1
-						logLine.TextColor3 = Color3.fromRGB(30, 30, 38)
-						logLine.Font = Enum.Font.Code
-						logLine.TextSize = 7
-						logLine.TextXAlignment = Enum.TextXAlignment.Left
-						logLine.Text = statusMessages[idx - 1].text
-						logLine.ZIndex = 1004
-						logLine.Parent = LoadOverlay
-						table.insert(logLines, logLine)
-					end)
-				end
-
-				if idx == #statusMessages then
-					StatusIcon.Text = "*"
-					StatusIcon.TextColor3 = Color3.fromRGB(80, 255, 120)
-				end
-				task.wait(0.25)
-			end
-		end)
-
-		-- ========== 13. PROGRESS BAR avec glow + shimmer + trail ==========
+		-- ✅ STATUS + PROGRESS BAR
 		local BarBG = Instance.new("Frame")
 		BarBG.Size = UDim2.new(0.55, 0, 0, 5)
 		BarBG.Position = UDim2.new(0.5, 0, 0.75, 0)
@@ -1801,7 +1556,6 @@ function OrionLib:MakeWindow(WindowConfig)
 		BarFill.Parent = BarBG
 		Instance.new("UICorner", BarFill).CornerRadius = UDim.new(1, 0)
 
-		-- Gradient on bar
 		local BarGradient = Instance.new("UIGradient")
 		BarGradient.Color = ColorSequence.new({
 			ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 120, 255)),
@@ -1810,16 +1564,6 @@ function OrionLib:MakeWindow(WindowConfig)
 		})
 		BarGradient.Parent = BarFill
 
-		local GlowTip = Instance.new("Frame")
-		GlowTip.Size = UDim2.new(0, 10, 1, 6)
-		GlowTip.Position = UDim2.new(1, -5, 0, -3)
-		GlowTip.BackgroundColor3 = Color3.fromRGB(200, 230, 255)
-		GlowTip.BackgroundTransparency = 0.2
-		GlowTip.BorderSizePixel = 0
-		GlowTip.ZIndex = 1006
-		GlowTip.Parent = BarFill
-		Instance.new("UICorner", GlowTip).CornerRadius = UDim.new(1, 0)
-
 		local fillSteps = {0.10, 0.25, 0.45, 0.65, 0.80, 0.92, 1.0}
 		task.spawn(function()
 			for si, target in next, fillSteps do
@@ -1827,20 +1571,10 @@ function OrionLib:MakeWindow(WindowConfig)
 				TweenService:Create(BarFill, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
 					Size = UDim2.new(target, 0, 1, 0)
 				}):Play()
-				if target > 0.6 then
-					TweenService:Create(BarFill, TweenInfo.new(0.2), {
-						BackgroundColor3 = Color3.fromRGB(
-							math.floor(100 + (target - 0.6) * 250),
-							math.floor(150 + (target - 0.6) * 262),
-							math.floor(255 - (target - 0.6) * 200)
-						)
-					}):Play()
-				end
 				task.wait(0.25)
 			end
 		end)
 
-		-- Shimmer sweep
 		task.spawn(function()
 			task.wait(0.3)
 			while BarFill and BarFill.Parent do
@@ -1861,237 +1595,17 @@ function OrionLib:MakeWindow(WindowConfig)
 			end
 		end)
 
-		-- ========== 14. PERCENTAGE with glitch ==========
-		local PctLabel = Instance.new("TextLabel")
-		PctLabel.Size = UDim2.new(0, 60, 0, 14)
-		PctLabel.Position = UDim2.new(1, -12, 1, -14)
-		PctLabel.AnchorPoint = Vector2.new(1, 1)
-		PctLabel.BackgroundTransparency = 1
-		PctLabel.TextColor3 = Color3.fromRGB(45, 45, 55)
-		PctLabel.Font = Enum.Font.Code
-		PctLabel.TextSize = 10
-		PctLabel.TextXAlignment = Enum.TextXAlignment.Right
-		PctLabel.Text = "0%"
-		PctLabel.ZIndex = 1005
-		PctLabel.Parent = LoadOverlay
-
-			task.spawn(function()
-			local pctTargets = {10, 25, 45, 65, 80, 92, 100}
-			for _, pct in next, pctTargets do
-				if not PctLabel or not PctLabel.Parent then break end
-				local from = tonumber(string.match(PctLabel.Text, "%d+")) or 0
-				for step = 1, 6 do
-					local val = math.floor(from + (pct - from) * (step / 6))
-					if math.random() < 0.25 then
-						PctLabel.Text = glitchChars[math.random(1, #glitchChars)] .. val .. "%"
-						task.wait(0.02)
-					end
-					PctLabel.Text = val .. "%"
-					task.wait(0.03)
-				end
-				PctLabel.Text = pct .. "%"
-			end
-		end)
-
-		-- ========== 15. VERSION + TIMESTAMP ==========
-		local InfoLabel = Instance.new("TextLabel")
-		InfoLabel.Size = UDim2.new(0.4, 0, 0, 10)
-		InfoLabel.Position = UDim2.new(0, 10, 1, -14)
-		InfoLabel.AnchorPoint = Vector2.new(0, 1)
-		InfoLabel.BackgroundTransparency = 1
-		InfoLabel.TextColor3 = Color3.fromRGB(28, 28, 36)
-		InfoLabel.Font = Enum.Font.Code
-		InfoLabel.TextSize = 8
-		InfoLabel.TextXAlignment = Enum.TextXAlignment.Left
-		InfoLabel.Text = ""
-		InfoLabel.ZIndex = 1005
-		InfoLabel.Parent = LoadOverlay
-
-		task.spawn(function()
-			task.wait(0.5)
-			local infoText = "OrionLib // " .. os.date("%H:%M:%S")
-			for i = 1, #infoText do
-				if not InfoLabel or not InfoLabel.Parent then break end
-				InfoLabel.Text = string.sub(infoText, 1, i)
-				task.wait(0.015)
-			end
-		end)
-
-			-- ========== 16. HEX DATA RAIN ==========
-		task.spawn(function()
-			local hexChars = {"0","1","2","3","4","5","6","7","8","9","A","B","C","D","E","F"}
-			for col = 1, 4 do
-				if not LoadOverlay or not LoadOverlay.Parent then break end
-				task.spawn(function()
-					local xPos = 0.05 + (col - 1) * 0.24
-					for row = 1, 3 do
-						if not LoadOverlay or not LoadOverlay.Parent then break end
-						local hexLabel = Instance.new("TextLabel")
-						hexLabel.Size = UDim2.new(0, 30, 0, 8)
-						hexLabel.Position = UDim2.new(xPos, 0, 0.83 + row * 0.032, 0)
-						hexLabel.BackgroundTransparency = 1
-						hexLabel.TextColor3 = Color3.fromRGB(20, 20, 26)
-						hexLabel.Font = Enum.Font.Code
-						hexLabel.TextSize = 7
-						hexLabel.TextXAlignment = Enum.TextXAlignment.Left
-						hexLabel.Text = ""
-						hexLabel.ZIndex = 1000
-						hexLabel.Parent = LoadOverlay
-
-						task.spawn(function()
-							local hex = hexChars[math.random(1,16)] .. hexChars[math.random(1,16)] .. " " .. hexChars[math.random(1,16)] .. hexChars[math.random(1,16)]
-							for c = 1, #hex do
-								if not hexLabel or not hexLabel.Parent then break end
-								hexLabel.Text = string.sub(hex, 1, c)
-								task.wait(0.02)
-							end
-							task.wait(0.2)
-							if hexLabel and hexLabel.Parent then
-								TweenService:Create(hexLabel, TweenInfo.new(0.4), {TextColor3 = Color3.fromRGB(12, 12, 16)}):Play()
-							end
-						end)
-						task.wait(0.05)
-					end
-				end)
-				task.wait(0.12)
-			end
-		end)
-
-			-- ========== 17. GLITCH BARS (barres horizontales qui glitchent) ==========
-		task.spawn(function()
-			task.wait(0.6)
-			for _ = 1, 6 do
-				if not LoadOverlay or not LoadOverlay.Parent then break end
-				task.spawn(function()
-					local bar = Instance.new("Frame")
-					local yy = math.random() * 0.9 + 0.05
-					bar.Size = UDim2.new(math.random() * 0.3 + 0.1, 0, 0, math.random(1, 3))
-					bar.Position = UDim2.new(math.random() * 0.5, 0, yy, 0)
-					bar.BackgroundColor3 = Color3.fromRGB(15 + math.random(0, 10), 15 + math.random(0, 10), 22 + math.random(0, 10))
-					bar.BackgroundTransparency = 0.3
-					bar.BorderSizePixel = 0
-					bar.ZIndex = 1001
-					bar.Parent = LoadOverlay
-					task.wait(0.04)
-					if bar and bar.Parent then bar:Destroy() end
-				end)
-				task.wait(math.random() * 0.3 + 0.15)
-			end
-		end)
-
-			-- ========== 18. GLITCH FLICKER GLOBAL ==========
-		task.spawn(function()
-			task.wait(0.8)
-			for _ = 1, 5 do
-				if not LoadOverlay or not LoadOverlay.Parent then break end
-				LoadOverlay.BackgroundColor3 = Color3.fromRGB(12 + math.random(0, 8), 12 + math.random(0, 8), 18 + math.random(0, 8))
-				task.wait(0.03)
-				LoadOverlay.BackgroundColor3 = Color3.fromRGB(6, 6, 10)
-				task.wait(math.random() * 0.4 + 0.2)
-			end
-		end)
-
-		-- ========== 19. BORDER PULSE ==========
-		task.spawn(function()
-			while OverlayStroke and OverlayStroke.Parent do
-				TweenService:Create(OverlayStroke, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-					Color = Color3.fromRGB(60, 80, 120),
-					Transparency = 0.25
-				}):Play()
-				task.wait(0.5)
-				TweenService:Create(OverlayStroke, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-					Color = Color3.fromRGB(40, 40, 55),
-					Transparency = 0.65
-				}):Play()
-				task.wait(0.5)
-			end
-		end)
-
-		-- ========== 20. BACKGROUND PULSE (fond qui respire) ==========
-		task.spawn(function()
-			while LoadOverlay and LoadOverlay.Parent do
-				TweenService:Create(LoadOverlay, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-					BackgroundColor3 = Color3.fromRGB(8, 8, 14)
-				}):Play()
-				task.wait(1.5)
-				TweenService:Create(LoadOverlay, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-					BackgroundColor3 = Color3.fromRGB(5, 5, 8)
-				}):Play()
-				task.wait(1.5)
-			end
-		end)
-
-		-- ========== 21. NOISE/STATIC OVERLAY ==========
-		task.spawn(function()
-			local noiseFrame = Instance.new("Frame")
-			noiseFrame.Size = UDim2.new(1, 0, 1, 0)
-			noiseFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-			noiseFrame.BackgroundTransparency = 0.97
-			noiseFrame.BorderSizePixel = 0
-			noiseFrame.ZIndex = 1008
-			noiseFrame.Parent = LoadOverlay
-			while noiseFrame and noiseFrame.Parent do
-				noiseFrame.BackgroundTransparency = 0.95 + math.random() * 0.04
-				task.wait(0.05)
-			end
-		end)
-
-		-- ========== 22. EDGE GLOW LINES (top/bottom edge accent) ==========
-		task.spawn(function()
-			task.wait(0.2)
-			local topEdge = Instance.new("Frame")
-			topEdge.Size = UDim2.new(0, 0, 0, 1)
-			topEdge.Position = UDim2.new(0.5, 0, 0, 0)
-			topEdge.AnchorPoint = Vector2.new(0.5, 0)
-			topEdge.BackgroundColor3 = Color3.fromRGB(100, 150, 255)
-			topEdge.BackgroundTransparency = 0.4
-			topEdge.BorderSizePixel = 0
-			topEdge.ZIndex = 1003
-			topEdge.Parent = LoadOverlay
-			TweenService:Create(topEdge, TweenInfo.new(1.0, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-				Size = UDim2.new(1, 0, 0, 1)
-			}):Play()
-
-			local botEdge = Instance.new("Frame")
-			botEdge.Size = UDim2.new(0, 0, 0, 1)
-			botEdge.Position = UDim2.new(0.5, 0, 1, -1)
-			botEdge.AnchorPoint = Vector2.new(0.5, 0)
-			botEdge.BackgroundColor3 = Color3.fromRGB(100, 150, 255)
-			botEdge.BackgroundTransparency = 0.4
-			botEdge.BorderSizePixel = 0
-			botEdge.ZIndex = 1003
-			botEdge.Parent = LoadOverlay
-			TweenService:Create(botEdge, TweenInfo.new(1.0, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-				Size = UDim2.new(1, 0, 0, 1)
-			}):Play()
-
-			-- Pulse edge glow
-			task.wait(1.0)
-			while topEdge and topEdge.Parent do
-				TweenService:Create(topEdge, TweenInfo.new(0.6, Enum.EasingStyle.Sine), {BackgroundTransparency = 0.8}):Play()
-				TweenService:Create(botEdge, TweenInfo.new(0.6, Enum.EasingStyle.Sine), {BackgroundTransparency = 0.8}):Play()
-				task.wait(0.6)
-				TweenService:Create(topEdge, TweenInfo.new(0.6, Enum.EasingStyle.Sine), {BackgroundTransparency = 0.4}):Play()
-				TweenService:Create(botEdge, TweenInfo.new(0.6, Enum.EasingStyle.Sine), {BackgroundTransparency = 0.4}):Play()
-				task.wait(0.6)
-			end
-		end)
-
-			-- ========== ADAPTIVE WAIT — adapte au temps reel de creation UI ==========
-		-- Minimum 1.5s pour le spectacle visuel, puis on attend que l'UI soit prete
+		-- ✅ ADAPTIVE WAIT
 		local _loadStart = tick()
 		local _minLoadTime = 1.5
-		local _maxLoadTime = 15 -- securite: max 15s total
+		local _maxLoadTime = 15
 
-		-- Polling: on attend que des elements soient crees puis qu'il n'y ait plus de nouveau
 		while tick() - _loadStart < _maxLoadTime do
 			if _lastElementTime > 0 and (tick() - _loadStart) >= _minLoadTime then
-				-- Des elements ont ete crees et le minimum est atteint
-				-- Attendre qu'il n'y ait plus de nouvel element pendant 0.35s (idle)
 				local idleStart = tick()
 				while tick() - idleStart < 0.35 do
 					if _lastElementTime > idleStart then
-						idleStart = tick() -- reset si nouvel element arrive
+						idleStart = tick()
 					end
 					task.wait(0.05)
 				end
@@ -2100,8 +1614,7 @@ function OrionLib:MakeWindow(WindowConfig)
 			task.wait(0.05)
 		end
 
-		-- ========== TRANSITION OUT MEGA ==========
-		-- Phase 1: Flash blanc
+		-- ✅ TRANSITION OUT
 		local Flash = Instance.new("Frame")
 		Flash.Size = UDim2.new(1, 0, 1, 0)
 		Flash.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -2113,46 +1626,16 @@ function OrionLib:MakeWindow(WindowConfig)
 			BackgroundTransparency = 1
 		}):Play()
 
-		-- Phase 2: Glitch burst sur tout le contenu
-		task.spawn(function()
-			for _ = 1, 8 do
-				if IntroLabel and IntroLabel.Parent then
-					local g = ""
-					for c = 1, #introText do
-						g = g .. glitchChars[math.random(1, #glitchChars)]
-					end
-					IntroLabel.Text = g
-					if ChromaRed and ChromaRed.Parent then ChromaRed.Text = g end
-					if ChromaBlue and ChromaBlue.Parent then ChromaBlue.Text = g end
-				end
-				task.wait(0.025)
-			end
-		end)
-
 		task.wait(0.15)
 
-		-- Phase 3: Fade out tout le contenu
-		local fadeTargets = {
-			{IntroIcon, "ImageTransparency", 1},
-		}
 		if IntroIcon and IntroIcon.Parent then
 			TweenService:Create(IntroIcon, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
 				ImageTransparency = 1, Size = UDim2.new(0, 68, 0, 68)
 			}):Play()
 		end
-		for _, lbl in next, {IntroLabel, SubLabel, StatusLabel, StatusIcon, PctLabel, InfoLabel, ChromaRed, ChromaBlue} do
+		for _, lbl in next, {IntroLabel} do
 			if lbl and lbl.Parent then
 				TweenService:Create(lbl, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {TextTransparency = 1}):Play()
-			end
-		end
-		for _, sep in next, sepLines do
-			if sep and sep.Parent then
-				TweenService:Create(sep, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundTransparency = 1}):Play()
-			end
-		end
-		for _, lg in next, logLines do
-			if lg and lg.Parent then
-				TweenService:Create(lg, TweenInfo.new(0.15, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {TextTransparency = 1}):Play()
 			end
 		end
 		if BarBG and BarBG.Parent then
@@ -2170,7 +1653,6 @@ function OrionLib:MakeWindow(WindowConfig)
 
 		task.wait(0.3)
 
-		-- Phase 4: Overlay split en deux + ligne de decoupe
 		local TopHalf = Instance.new("Frame")
 		TopHalf.Size = UDim2.new(1, 0, 0.5, 0)
 		TopHalf.Position = UDim2.new(0, 0, 0, 0)
@@ -2209,7 +1691,6 @@ function OrionLib:MakeWindow(WindowConfig)
 			Position = UDim2.new(0, 0, 1.05, 0)
 		}):Play()
 
-		-- Fade blur + color correction
 		task.spawn(function()
 			TweenService:Create(BlurEffect, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
 				Size = 0
@@ -2228,11 +1709,10 @@ function OrionLib:MakeWindow(WindowConfig)
 		task.wait(0.6)
 		LoadOverlay:Destroy()
 
-		-- ========== PLAY QUEUED ANIMATIONS ==========
+		-- ✅ PLAY QUEUED ANIMATIONS
 		_isLoading = false
 		_introIndex = 0
 
-		-- Rendre visible et animer tous les elements en queue
 		for _, item in next, _animQueue do
 			if item.type == "element" then
 				if item.frame and item.frame.Parent then
@@ -2294,7 +1774,6 @@ function OrionLib:MakeWindow(WindowConfig)
 			TabFrame.Ico.Image = GetIcon(TabConfig.Icon)
 		end
 
-		-- Animation d'intro du tab dans la sidebar
 		AnimateTabIntro(TabFrame, FirstTab)
 
 		local Container = AddThemeObject(SetChildren(SetProps(MakeElement("ScrollFrame", Color3.fromRGB(255, 255, 255), 5), {
@@ -2314,7 +1793,6 @@ function OrionLib:MakeWindow(WindowConfig)
 
 		if FirstTab then
 			FirstTab = false
-			-- Les transparences sont gerees par AnimateTabIntro
 			TabFrame.Title.Font = Enum.Font.FredokaOne
 			Container.Visible = true
 		end    
@@ -2337,63 +1815,50 @@ function OrionLib:MakeWindow(WindowConfig)
 			TabFrame.Title.Font = Enum.Font.FredokaOne
 			Container.Visible = true
 
-				-- Animation: les elements apparaissent l'un apres l'autre avec slide + fade
-				task.spawn(function()
-					local Items = {}
-					for _, Child in next, Container:GetChildren() do
-						if Child:IsA("Frame") or Child:IsA("TextButton") then
-							table.insert(Items, Child)
+			-- ✅ SMOOTH SECTION ANIMATION
+			task.spawn(function()
+				local Items = {}
+				for _, Child in next, Container:GetChildren() do
+					if Child:IsA("Frame") or Child:IsA("TextButton") then
+						table.insert(Items, Child)
+					end
+				end
+				
+				for _, Item in next, Items do
+					Item.Position = UDim2.new(0, -30, Item.Position.Y.Scale, Item.Position.Y.Offset)
+					Item.BackgroundTransparency = 1
+					for _, desc in next, Item:GetDescendants() do
+						if desc:IsA("TextLabel") then
+							desc.TextTransparency = 1
+						elseif desc:IsA("ImageLabel") or desc:IsA("ImageButton") then
+							desc.ImageTransparency = 1
 						end
 					end
-					-- Cacher tous les elements d'abord
-					for _, Item in next, Items do
-						Item.Position = UDim2.new(0, 25, Item.Position.Y.Scale, Item.Position.Y.Offset)
-						Item.BackgroundTransparency = 1
-						-- Cacher texte et images aussi
-						for _, desc in next, Item:GetDescendants() do
-							if desc:IsA("TextLabel") then
-								desc.TextTransparency = 1
-							elseif desc:IsA("ImageLabel") or desc:IsA("ImageButton") then
-								desc.ImageTransparency = 1
-							end
-						end
-					end
-					-- Reveal un par un avec stagger
-					for _, Item in next, Items do
-						task.wait(0.045)
-						TweenService:Create(Item, TweenInfo.new(0.35, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+				end
+				
+				for i, Item in next, Items do
+					task.delay(i * 0.025, function()
+						if not Item or not Item.Parent then return end
+						
+						TweenService:Create(Item, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
 							Position = UDim2.new(0, 0, Item.Position.Y.Scale, Item.Position.Y.Offset),
 							BackgroundTransparency = 0.7
 						}):Play()
-						-- Reveal enfants (texte, images)
+						
 						for _, desc in next, Item:GetDescendants() do
 							if desc:IsA("TextLabel") then
-								TweenService:Create(desc, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-									TextTransparency = desc.Name == "Content" and 0 or (desc.Name == "Value" and 0.8 or 0)
+								TweenService:Create(desc, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+									TextTransparency = 0
 								}):Play()
 							elseif desc:IsA("ImageLabel") or desc:IsA("ImageButton") then
-								TweenService:Create(desc, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+								TweenService:Create(desc, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
 									ImageTransparency = 0
 								}):Play()
 							end
 						end
-						-- Si c'est un slider, animer le remplissage
-						local sliderDrag = Item:FindFirstChild("Frame")
-						if sliderDrag then
-							local innerDrag = sliderDrag:FindFirstChildWhichIsA("Frame")
-							if innerDrag and innerDrag.Name ~= "UICorner" then
-								local savedSize = innerDrag.Size
-								innerDrag.Size = UDim2.new(0, 0, 1, 0)
-								task.spawn(function()
-									task.wait(0.2)
-									TweenService:Create(innerDrag, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-										Size = savedSize
-									}):Play()
-								end)
-							end
-						end
-					end
-				end)
+					end)
+				end
+			end)
 		end)
 
 		local function GetElements(ItemParent)
@@ -2413,7 +1878,6 @@ function OrionLib:MakeWindow(WindowConfig)
 					AddThemeObject(MakeElement("Stroke"), "Stroke")
 			}), "Second")
 
-				-- Animation d'intro label
 				AnimateElementIntro(LabelFrame, "label")
 
 				local LabelFunction = {}
@@ -2454,7 +1918,6 @@ function OrionLib:MakeWindow(WindowConfig)
 
 				ParagraphFrame.Content.Text = Content
 
-				-- Animation d'intro paragraph
 				AnimateElementIntro(ParagraphFrame, "paragraph")
 
 				local ParagraphFunction = {}
@@ -2493,9 +1956,8 @@ function OrionLib:MakeWindow(WindowConfig)
 					Click
 				}), "Second")
 
-					AddConnection(Click.MouseEnter, function()
+				AddConnection(Click.MouseEnter, function()
 					TweenService:Create(ButtonFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(OrionLib.Themes[OrionLib.SelectedTheme].Second.R * 255 + 3, OrionLib.Themes[OrionLib.SelectedTheme].Second.G * 255 + 3, OrionLib.Themes[OrionLib.SelectedTheme].Second.B * 255 + 3)}):Play()
-					-- Hover glow underline
 					task.spawn(function()
 						local hoverLine = Instance.new("Frame")
 						hoverLine.Name = "_hoverLine"
@@ -2514,7 +1976,6 @@ function OrionLib:MakeWindow(WindowConfig)
 
 				AddConnection(Click.MouseLeave, function()
 					TweenService:Create(ButtonFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundColor3 = OrionLib.Themes[OrionLib.SelectedTheme].Second}):Play()
-					-- Remove hover line
 					local hl = ButtonFrame:FindFirstChild("_hoverLine")
 					if hl then
 						TweenService:Create(hl, TweenInfo.new(0.15, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
@@ -2526,12 +1987,9 @@ function OrionLib:MakeWindow(WindowConfig)
 
 				AddConnection(Click.MouseButton1Up, function()
 					TweenService:Create(ButtonFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(OrionLib.Themes[OrionLib.SelectedTheme].Second.R * 255 + 3, OrionLib.Themes[OrionLib.SelectedTheme].Second.G * 255 + 3, OrionLib.Themes[OrionLib.SelectedTheme].Second.B * 255 + 3)}):Play()
-					-- === MEGA BUTTON CLICK ANIMATION ===
-					-- 1. Scale bounce back
 					TweenService:Create(ButtonFrame, TweenInfo.new(0.25, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), {
 						Size = UDim2.new(1, 0, 0, 33)
 					}):Play()
-					-- 2. Flash overlay
 					task.spawn(function()
 						local flash = Instance.new("Frame")
 						flash.Size = UDim2.new(1, 0, 1, 0)
@@ -2547,7 +2005,6 @@ function OrionLib:MakeWindow(WindowConfig)
 						task.wait(0.35)
 						flash:Destroy()
 					end)
-					-- 3. Glow sweep gauche -> droite
 					task.spawn(function()
 						local sweep = Instance.new("Frame")
 						sweep.Size = UDim2.new(0, 4, 1, 0)
@@ -2564,7 +2021,6 @@ function OrionLib:MakeWindow(WindowConfig)
 						task.wait(0.3)
 						sweep:Destroy()
 					end)
-					-- 4. Glow ring sur le stroke
 					task.spawn(function()
 						local ring = Instance.new("UIStroke")
 						ring.Color = Color3.fromRGB(100, 180, 255)
@@ -2578,41 +2034,6 @@ function OrionLib:MakeWindow(WindowConfig)
 						task.wait(0.4)
 						ring:Destroy()
 					end)
-					-- 5. Texte glitch rapide
-					task.spawn(function()
-						local label = ButtonFrame:FindFirstChild("Content")
-						if label and label:IsA("TextLabel") then
-							local origText = label.Text
-							for _ = 1, 2 do
-								local g = ""
-								for c = 1, #origText do
-									if math.random() < 0.3 then
-										g = g .. _glitchCharsAnim[math.random(1, #_glitchCharsAnim)]
-									else
-										g = g .. string.sub(origText, c, c)
-									end
-								end
-								label.Text = g
-								task.wait(0.03)
-							end
-							label.Text = origText
-						end
-					end)
-					-- 6. Icon pulse
-					task.spawn(function()
-						for _, child in next, ButtonFrame:GetChildren() do
-							if child:IsA("ImageLabel") or child:IsA("ImageButton") then
-								local origSize = child.Size
-								TweenService:Create(child, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-									Size = UDim2.new(origSize.X.Scale, origSize.X.Offset + 4, origSize.Y.Scale, origSize.Y.Offset + 4)
-								}):Play()
-								task.wait(0.1)
-								TweenService:Create(child, TweenInfo.new(0.2, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), {
-									Size = origSize
-								}):Play()
-							end
-						end
-					end)
 					spawn(function()
 						ButtonConfig.Callback()
 					end)
@@ -2620,13 +2041,11 @@ function OrionLib:MakeWindow(WindowConfig)
 
 				AddConnection(Click.MouseButton1Down, function()
 					TweenService:Create(ButtonFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(OrionLib.Themes[OrionLib.SelectedTheme].Second.R * 255 + 6, OrionLib.Themes[OrionLib.SelectedTheme].Second.G * 255 + 6, OrionLib.Themes[OrionLib.SelectedTheme].Second.B * 255 + 6)}):Play()
-					-- Scale down press effect
 					TweenService:Create(ButtonFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 						Size = UDim2.new(1, -4, 0, 31)
 					}):Play()
 				end)
 
-				-- Animation d'intro button (slide depuis la droite)
 				AnimateElementIntro(ButtonFrame, "button")
 
 				function Button:Set(ButtonText)
@@ -2684,10 +2103,8 @@ function OrionLib:MakeWindow(WindowConfig)
 					Click
 				}), "Second")
 
-					function Toggle:Set(Value)
+				function Toggle:Set(Value)
 					Toggle.Value = Value
-					-- === MEGA TOGGLE ANIMATION ===
-					-- 1. Scale punch sur la checkbox (shrink puis bounce back)
 					task.spawn(function()
 						TweenService:Create(ToggleBox, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 							Size = UDim2.new(0, 18, 0, 18)
@@ -2697,7 +2114,6 @@ function OrionLib:MakeWindow(WindowConfig)
 							Size = UDim2.new(0, 24, 0, 24)
 						}):Play()
 					end)
-					-- 2. Rotation snap
 					task.spawn(function()
 						TweenService:Create(ToggleBox, TweenInfo.new(0.05, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 							Rotation = Toggle.Value and 8 or -8
@@ -2707,10 +2123,8 @@ function OrionLib:MakeWindow(WindowConfig)
 							Rotation = 0
 						}):Play()
 					end)
-					-- 3. Background color + stroke + icon
 					TweenService:Create(ToggleBox, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundColor3 = Toggle.Value and ToggleConfig.Color or OrionLib.Themes.Default.Divider}):Play()
 					TweenService:Create(ToggleBox.Stroke, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Color = Toggle.Value and ToggleConfig.Color or OrionLib.Themes.Default.Stroke}):Play()
-					-- 4. Checkmark icon: bounce in ou shrink out
 					if Toggle.Value then
 						ToggleBox.Ico.Size = UDim2.new(0, 0, 0, 0)
 						ToggleBox.Ico.ImageTransparency = 0
@@ -2726,7 +2140,6 @@ function OrionLib:MakeWindow(WindowConfig)
 							Rotation = 45
 						}):Play()
 					end
-					-- 5. Glow ring ripple
 					task.spawn(function()
 						local ring = Instance.new("UIStroke")
 						ring.Color = Toggle.Value and ToggleConfig.Color or Color3.fromRGB(180, 180, 180)
@@ -2740,7 +2153,6 @@ function OrionLib:MakeWindow(WindowConfig)
 						task.wait(0.45)
 						ring:Destroy()
 					end)
-					-- 6. Flash overlay sur la ToggleFrame
 					task.spawn(function()
 						local flash = Instance.new("Frame")
 						flash.Size = UDim2.new(1, 0, 1, 0)
@@ -2756,7 +2168,6 @@ function OrionLib:MakeWindow(WindowConfig)
 						task.wait(0.4)
 						flash:Destroy()
 					end)
-					-- 7. Glow sweep sur la frame
 					task.spawn(function()
 						local sweep = Instance.new("Frame")
 						sweep.Size = UDim2.new(0, 4, 1, 0)
@@ -2773,42 +2184,19 @@ function OrionLib:MakeWindow(WindowConfig)
 						task.wait(0.35)
 						sweep:Destroy()
 					end)
-					-- 8. Texte glitch rapide
-					task.spawn(function()
-						local label = ToggleFrame:FindFirstChild("Content")
-						if label and label:IsA("TextLabel") then
-							local origText = label.Text
-							for _ = 1, 2 do
-								local g = ""
-								for c = 1, #origText do
-									if math.random() < 0.3 then
-										g = g .. _glitchCharsAnim[math.random(1, #_glitchCharsAnim)]
-									else
-										g = g .. string.sub(origText, c, c)
-									end
-								end
-								label.Text = g
-								task.wait(0.03)
-							end
-							label.Text = origText
-						end
-					end)
 					ToggleConfig.Callback(Toggle.Value)
 				end    
 
 				Toggle:Set(Toggle.Value)
 
-				-- Animation d'intro toggle (frame slide + checkbox pop)
 				AnimateElementIntro(ToggleFrame, "toggle")
 				AnimateToggleIntro(ToggleBox)
 
-					AddConnection(Click.MouseEnter, function()
+				AddConnection(Click.MouseEnter, function()
 					TweenService:Create(ToggleFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(OrionLib.Themes[OrionLib.SelectedTheme].Second.R * 255 + 3, OrionLib.Themes[OrionLib.SelectedTheme].Second.G * 255 + 3, OrionLib.Themes[OrionLib.SelectedTheme].Second.B * 255 + 3)}):Play()
-					-- Hover: checkbox subtle scale up
 					TweenService:Create(ToggleBox, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
 						Size = UDim2.new(0, 26, 0, 26)
 					}):Play()
-					-- Hover underline
 					task.spawn(function()
 						local hoverLine = Instance.new("Frame")
 						hoverLine.Name = "_toggleHoverLine"
@@ -2827,11 +2215,9 @@ function OrionLib:MakeWindow(WindowConfig)
 
 				AddConnection(Click.MouseLeave, function()
 					TweenService:Create(ToggleFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundColor3 = OrionLib.Themes[OrionLib.SelectedTheme].Second}):Play()
-					-- Restore checkbox size
 					TweenService:Create(ToggleBox, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
 						Size = UDim2.new(0, 24, 0, 24)
 					}):Play()
-					-- Remove hover line
 					local hl = ToggleFrame:FindFirstChild("_toggleHoverLine")
 					if hl then
 						TweenService:Create(hl, TweenInfo.new(0.15, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
@@ -2843,7 +2229,6 @@ function OrionLib:MakeWindow(WindowConfig)
 
 				AddConnection(Click.MouseButton1Up, function()
 					TweenService:Create(ToggleFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(OrionLib.Themes[OrionLib.SelectedTheme].Second.R * 255 + 3, OrionLib.Themes[OrionLib.SelectedTheme].Second.G * 255 + 3, OrionLib.Themes[OrionLib.SelectedTheme].Second.B * 255 + 3)}):Play()
-					-- Scale bounce back
 					TweenService:Create(ToggleFrame, TweenInfo.new(0.25, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), {
 						Size = UDim2.new(1, 0, 0, 38)
 					}):Play()
@@ -2853,7 +2238,6 @@ function OrionLib:MakeWindow(WindowConfig)
 
 				AddConnection(Click.MouseButton1Down, function()
 					TweenService:Create(ToggleFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(OrionLib.Themes[OrionLib.SelectedTheme].Second.R * 255 + 6, OrionLib.Themes[OrionLib.SelectedTheme].Second.G * 255 + 6, OrionLib.Themes[OrionLib.SelectedTheme].Second.B * 255 + 6)}):Play()
-					-- Scale down press
 					TweenService:Create(ToggleFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 						Size = UDim2.new(1, -4, 0, 36)
 					}):Play()
@@ -2926,12 +2310,7 @@ function OrionLib:MakeWindow(WindowConfig)
 					SliderBar
 				}), "Second")
 
-				SliderBar.InputBegan:Connect(function(Input)
-					if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then 
-						Dragging = true 
-					end 
-				end)
-				SliderBar.InputEnded:Connect(function(Input) 
+								SliderBar.InputEnded:Connect(function(Input) 
 					if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then 
 						Dragging = false 
 					end 
@@ -2945,24 +2324,49 @@ function OrionLib:MakeWindow(WindowConfig)
 					end
 				end)
 
+				-- ✅ ENHANCED SLIDER ANIMATION
 				function Slider:Set(Value)
 					self.Value = math.clamp(Round(Value, SliderConfig.Increment), SliderConfig.Min, SliderConfig.Max)
-					TweenService:Create(SliderDrag,TweenInfo.new(.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),{Size = UDim2.fromScale((self.Value - SliderConfig.Min) / (SliderConfig.Max - SliderConfig.Min), 1)}):Play()
+					local targetScale = (self.Value - SliderConfig.Min) / (SliderConfig.Max - SliderConfig.Min)
+					
+					TweenService:Create(SliderDrag, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+						Size = UDim2.fromScale(targetScale, 1)
+					}):Play()
+					
+					-- ✅ SHIMMER EFFECT
+					task.spawn(function()
+						local shimmer = Instance.new("Frame")
+						shimmer.Size = UDim2.new(0.15, 0, 1, 0)
+						shimmer.Position = UDim2.new(-0.15, 0, 0, 0)
+						shimmer.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+						shimmer.BackgroundTransparency = 0.6
+						shimmer.BorderSizePixel = 0
+						shimmer.ZIndex = SliderDrag.ZIndex + 2
+						shimmer.Parent = SliderDrag
+						
+						TweenService:Create(shimmer, TweenInfo.new(0.45, Enum.EasingStyle.Linear), {
+							Position = UDim2.new(1, 0, 0, 0),
+							BackgroundTransparency = 1
+						}):Play()
+						
+						task.wait(0.5)
+						shimmer:Destroy()
+					end)
+					
 					SliderBar.Value.Text = tostring(self.Value) .. " " .. SliderConfig.ValueName
 					SliderDrag.Value.Text = tostring(self.Value) .. " " .. SliderConfig.ValueName
 					SliderConfig.Callback(self.Value)
 				end      
 
-						Slider:Set(Slider.Value)
+				Slider:Set(Slider.Value)
 
-					-- Animation d'intro slider (frame slide + barre qui s'allonge)
-					AnimateElementIntro(SliderFrame, "slider")
-					AnimateSliderIntro(SliderDrag, Slider.Value, SliderConfig.Min, SliderConfig.Max)
+				AnimateElementIntro(SliderFrame, "slider")
+				AnimateSliderIntro(SliderDrag, Slider.Value, SliderConfig.Min, SliderConfig.Max)
 
-					if SliderConfig.Flag then				
-						OrionLib.Flags[SliderConfig.Flag] = Slider
-					end
-					return Slider
+				if SliderConfig.Flag then				
+					OrionLib.Flags[SliderConfig.Flag] = Slider
+				end
+				return Slider
 			end  
 			function ElementFunction:AddDropdown(DropdownConfig)
 				DropdownConfig = DropdownConfig or {}
@@ -3101,7 +2505,7 @@ function OrionLib:MakeWindow(WindowConfig)
 					return DropdownConfig.Callback(Dropdown.Value)
 				end
 
-					AddConnection(Click.MouseButton1Click, function()
+				AddConnection(Click.MouseButton1Click, function()
 					Dropdown.Toggled = not Dropdown.Toggled
 					DropdownFrame.F.Line.Visible = Dropdown.Toggled
 					TweenService:Create(DropdownFrame.F.Ico,TweenInfo.new(.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out),{Rotation = Dropdown.Toggled and 180 or 0}):Play()
@@ -3110,7 +2514,6 @@ function OrionLib:MakeWindow(WindowConfig)
 					else
 						TweenService:Create(DropdownFrame,TweenInfo.new(.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out),{Size = Dropdown.Toggled and UDim2.new(1, 0, 0, DropdownList.AbsoluteContentSize.Y + 38) or UDim2.new(1, 0, 0, 38)}):Play()
 					end
-					-- Flash overlay on dropdown click
 					task.spawn(function()
 						local flash = Instance.new("Frame")
 						flash.Size = UDim2.new(1, 0, 0, 38)
@@ -3126,38 +2529,11 @@ function OrionLib:MakeWindow(WindowConfig)
 						task.wait(0.35)
 						flash:Destroy()
 					end)
-					-- Glow ring
-					task.spawn(function()
-						local ring = Instance.new("UIStroke")
-						ring.Color = Color3.fromRGB(100, 150, 255)
-						ring.Transparency = 0.4
-						ring.Thickness = 2
-						ring.Parent = DropdownFrame
-						TweenService:Create(ring, TweenInfo.new(0.35, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-							Transparency = 1,
-							Thickness = 5
-						}):Play()
-						task.wait(0.4)
-						ring:Destroy()
-					end)
-					-- Arrow icon pulse
-					task.spawn(function()
-						local ico = DropdownFrame.F.Ico
-						local origSize = ico.Size
-						TweenService:Create(ico, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-							Size = UDim2.new(origSize.X.Scale, origSize.X.Offset + 4, origSize.Y.Scale, origSize.Y.Offset + 4)
-						}):Play()
-						task.wait(0.1)
-						TweenService:Create(ico, TweenInfo.new(0.2, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), {
-							Size = origSize
-						}):Play()
-					end)
 				end)
 
 				Dropdown:Refresh(Dropdown.Options, false)
 				Dropdown:Set(Dropdown.Value)
 
-				-- Animation d'intro dropdown
 				AnimateElementIntro(DropdownFrame, "dropdown")
 
 				if DropdownConfig.Flag then				
@@ -3257,9 +2633,8 @@ function OrionLib:MakeWindow(WindowConfig)
 					end
 				end)
 
-					AddConnection(Click.MouseEnter, function()
+				AddConnection(Click.MouseEnter, function()
 					TweenService:Create(BindFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(OrionLib.Themes[OrionLib.SelectedTheme].Second.R * 255 + 3, OrionLib.Themes[OrionLib.SelectedTheme].Second.G * 255 + 3, OrionLib.Themes[OrionLib.SelectedTheme].Second.B * 255 + 3)}):Play()
-					-- Bind box hover glow
 					TweenService:Create(BindBox, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
 						Size = UDim2.new(0, BindBox.Value.TextBounds.X + 20, 0, 26)
 					}):Play()
@@ -3274,7 +2649,6 @@ function OrionLib:MakeWindow(WindowConfig)
 
 				AddConnection(Click.MouseButton1Up, function()
 					TweenService:Create(BindFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(OrionLib.Themes[OrionLib.SelectedTheme].Second.R * 255 + 3, OrionLib.Themes[OrionLib.SelectedTheme].Second.G * 255 + 3, OrionLib.Themes[OrionLib.SelectedTheme].Second.B * 255 + 3)}):Play()
-					-- Bind click: bounce + flash + glow
 					TweenService:Create(BindFrame, TweenInfo.new(0.25, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), {
 						Size = UDim2.new(1, 0, 0, 38)
 					}):Play()
@@ -3293,7 +2667,6 @@ function OrionLib:MakeWindow(WindowConfig)
 						task.wait(0.35)
 						flash:Destroy()
 					end)
-					-- BindBox scale punch
 					task.spawn(function()
 						TweenService:Create(BindBox, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 							Size = UDim2.new(0, BindBox.Value.TextBounds.X + 10, 0, 18)
@@ -3307,7 +2680,6 @@ function OrionLib:MakeWindow(WindowConfig)
 
 				AddConnection(Click.MouseButton1Down, function()
 					TweenService:Create(BindFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(OrionLib.Themes[OrionLib.SelectedTheme].Second.R * 255 + 6, OrionLib.Themes[OrionLib.SelectedTheme].Second.G * 255 + 6, OrionLib.Themes[OrionLib.SelectedTheme].Second.B * 255 + 6)}):Play()
-					-- Scale down press
 					TweenService:Create(BindFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 						Size = UDim2.new(1, -4, 0, 36)
 					}):Play()
@@ -3322,7 +2694,6 @@ function OrionLib:MakeWindow(WindowConfig)
 
 				Bind:Set(BindConfig.Default)
 
-				-- Animation d'intro bind
 				AnimateElementIntro(BindFrame, "bind")
 
 				if BindConfig.Flag then				
@@ -3362,7 +2733,6 @@ function OrionLib:MakeWindow(WindowConfig)
 					TextboxActual
 				}), "Main")
 
-
 				local TextboxFrame = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 5), {
 					Size = UDim2.new(1, 0, 0, 38),
 					Parent = ItemParent
@@ -3391,9 +2761,8 @@ function OrionLib:MakeWindow(WindowConfig)
 
 				TextboxActual.Text = TextboxConfig.Default
 
-					AddConnection(Click.MouseEnter, function()
+				AddConnection(Click.MouseEnter, function()
 					TweenService:Create(TextboxFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(OrionLib.Themes[OrionLib.SelectedTheme].Second.R * 255 + 3, OrionLib.Themes[OrionLib.SelectedTheme].Second.G * 255 + 3, OrionLib.Themes[OrionLib.SelectedTheme].Second.B * 255 + 3)}):Play()
-					-- Hover: textbox container scale up
 					TweenService:Create(TextContainer, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
 						Size = UDim2.new(0, TextboxActual.TextBounds.X + 20, 0, 26)
 					}):Play()
@@ -3408,7 +2777,6 @@ function OrionLib:MakeWindow(WindowConfig)
 
 				AddConnection(Click.MouseButton1Up, function()
 					TweenService:Create(TextboxFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(OrionLib.Themes[OrionLib.SelectedTheme].Second.R * 255 + 3, OrionLib.Themes[OrionLib.SelectedTheme].Second.G * 255 + 3, OrionLib.Themes[OrionLib.SelectedTheme].Second.B * 255 + 3)}):Play()
-					-- Bounce back + flash + glow sweep
 					TweenService:Create(TextboxFrame, TweenInfo.new(0.25, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), {
 						Size = UDim2.new(1, 0, 0, 38)
 					}):Play()
@@ -3443,7 +2811,6 @@ function OrionLib:MakeWindow(WindowConfig)
 						task.wait(0.3)
 						sweep:Destroy()
 					end)
-					-- TextContainer scale punch
 					task.spawn(function()
 						TweenService:Create(TextContainer, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 							Size = UDim2.new(0, TextboxActual.TextBounds.X + 10, 0, 18)
@@ -3458,13 +2825,11 @@ function OrionLib:MakeWindow(WindowConfig)
 
 				AddConnection(Click.MouseButton1Down, function()
 					TweenService:Create(TextboxFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(OrionLib.Themes[OrionLib.SelectedTheme].Second.R * 255 + 6, OrionLib.Themes[OrionLib.SelectedTheme].Second.G * 255 + 6, OrionLib.Themes[OrionLib.SelectedTheme].Second.B * 255 + 6)}):Play()
-					-- Scale down press
 					TweenService:Create(TextboxFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 						Size = UDim2.new(1, -4, 0, 36)
 					}):Play()
 				end)
 
-				-- Animation d'intro textbox
 				AnimateElementIntro(TextboxFrame, "textbox")
 			end 
 			function ElementFunction:AddColorpicker(ColorpickerConfig)
@@ -3571,13 +2936,12 @@ function OrionLib:MakeWindow(WindowConfig)
 					AddThemeObject(MakeElement("Stroke"), "Stroke"),
 				}), "Second")
 
-					AddConnection(Click.MouseButton1Click, function()
+				AddConnection(Click.MouseButton1Click, function()
 					Colorpicker.Toggled = not Colorpicker.Toggled
 					TweenService:Create(ColorpickerFrame,TweenInfo.new(.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out),{Size = Colorpicker.Toggled and UDim2.new(1, 0, 0, 148) or UDim2.new(1, 0, 0, 38)}):Play()
 					Color.Visible = Colorpicker.Toggled
 					Hue.Visible = Colorpicker.Toggled
 					ColorpickerFrame.F.Line.Visible = Colorpicker.Toggled
-					-- Flash overlay
 					task.spawn(function()
 						local flash = Instance.new("Frame")
 						flash.Size = UDim2.new(1, 0, 0, 38)
@@ -3593,7 +2957,6 @@ function OrionLib:MakeWindow(WindowConfig)
 						task.wait(0.35)
 						flash:Destroy()
 					end)
-					-- Color box pulse
 					task.spawn(function()
 						TweenService:Create(ColorpickerBox, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 							Size = UDim2.new(0, 18, 0, 18)
@@ -3603,7 +2966,6 @@ function OrionLib:MakeWindow(WindowConfig)
 							Size = UDim2.new(0, 24, 0, 24)
 						}):Play()
 					end)
-					-- Glow ring
 					task.spawn(function()
 						local ring = Instance.new("UIStroke")
 						ring.Color = ColorpickerBox.BackgroundColor3
@@ -3688,7 +3050,6 @@ function OrionLib:MakeWindow(WindowConfig)
 
 				Colorpicker:Set(Colorpicker.Value)
 
-				-- Animation d'intro colorpicker
 				AnimateElementIntro(ColorpickerFrame, "colorpicker")
 
 				if ColorpickerConfig.Flag then				
@@ -3782,182 +3143,12 @@ function OrionLib:MakeWindow(WindowConfig)
 	return TabFunction
 end   
 
-local Configs_HUB = {
-  Cor_Hub = Color3.fromRGB(15, 15, 15),
-  Cor_Options = Color3.fromRGB(15, 15, 15),
-  Cor_Stroke = Color3.fromRGB(60, 60, 60),
-  Cor_Text = Color3.fromRGB(240, 240, 240),
-  Cor_DarkText = Color3.fromRGB(140, 140, 140),
-  Corner_Radius = UDim.new(0, 4),
-  Text_Font = Enum.Font.FredokaOne
-}
-
-local TweenService = game:GetService("TweenService")
-
-local function Create(instance, parent, props)
-  local new = Instance.new(instance, parent)
-  if props then
-    table.foreach(props, function(prop, value)
-      new[prop] = value
-    end)
-  end
-  return new
-end
-
-local function SetProps(instance, props)
-  if instance and props then
-    table.foreach(props, function(prop, value)
-      instance[prop] = value
-    end)
-  end
-  return instance
-end
-
-local function Corner(parent, props)
-  local new = Create("UICorner", parent)
-  new.CornerRadius = Configs_HUB.Corner_Radius
-  if props then
-    SetProps(new, props)
-  end
-  return new
-end
-
-local function Stroke(parent, props)
-  local new = Create("UIStroke", parent)
-  new.Color = Configs_HUB.Cor_Stroke
-  new.ApplyStrokeMode = "Border"
-  if props then
-    SetProps(new, props)
-  end
-  return new
-end
-
-local function CreateTween(instance, prop, value, time, tweenWait)
-  local tween = TweenService:Create(instance,
-  TweenInfo.new(time, Enum.EasingStyle.Linear),
-  {[prop] = value})
-  tween:Play()
-  if tweenWait then
-    tween.Completed:Wait()
-  end
-end
-
-local ScreenGui = Create("ScreenGui", Orion)
-
-local Menu_Notifi = Create("Frame", ScreenGui, {
-  Size = UDim2.new(0, 300, 1, 0),
-  Position = UDim2.new(1, 0, 0, 0),
-  AnchorPoint = Vector2.new(1, 0),
-  BackgroundTransparency = 1
-})
-
-local Padding = Create("UIPadding", Menu_Notifi, {
-  PaddingLeft = UDim.new(0, 25),
-  PaddingTop = UDim.new(0, 25),
-  PaddingBottom = UDim.new(0, 50)
-})
-
-local ListLayout = Create("UIListLayout", Menu_Notifi, {
-  Padding = UDim.new(0, 15),
-  VerticalAlignment = "Bottom"
-})
-
-function OrionLib:MakeNotifi(Configs)
-  local Title = Configs.Title or "Title!"
-  local text = Configs.Text or "Notification content... what will it say??"
-  local timewait = Configs.Time or 5
-  
-  local Frame1 = Create("Frame", Menu_Notifi, {
-    Size = UDim2.new(2, 0, 0, 0),
-    BackgroundTransparency = 1,
-    AutomaticSize = "Y",
-    Name = "Title"
-  })
-  
-  local Frame2 = Create("Frame", Frame1, {
-    Size = UDim2.new(0, Menu_Notifi.Size.X.Offset - 50, 0, 0),
-    BackgroundColor3 = Configs_HUB.Cor_Hub,
-    Position = UDim2.new(0, Menu_Notifi.Size.X.Offset, 0, 0),
-    AutomaticSize = "Y"
-  })Corner(Frame2)
-  
-  local TextLabel = Create("TextLabel", Frame2, {
-    Size = UDim2.new(1, 0, 0, 25),
-    Font = Configs_HUB.Text_Font,
-    BackgroundTransparency = 1,
-    Text = Title,
-    TextSize = 20,
-    Position = UDim2.new(0, 20, 0, 5),
-    TextXAlignment = "Left",
-    TextColor3 = Configs_HUB.Cor_Text
-  })
-  
-  local TextButton = Create("TextButton", Frame2, {
-    Text = "X",
-    Font = Configs_HUB.Text_Font,
-    TextSize = 20,
-    BackgroundTransparency = 1,
-    TextColor3 = Color3.fromRGB(200, 200, 200),
-    Position = UDim2.new(1, -5, 0, 5),
-    AnchorPoint = Vector2.new(1, 0),
-    Size = UDim2.new(0, 25, 0, 25)
-  })
-  
-  local TextLabel = Create("TextLabel", Frame2, {
-    Size = UDim2.new(1, -30, 0, 0),
-    Position = UDim2.new(0, 20, 0, TextButton.Size.Y.Offset + 10),
-    TextSize = 15,
-    TextColor3 = Configs_HUB.Cor_DarkText,
-    TextXAlignment = "Left",
-    TextYAlignment = "Top",
-    AutomaticSize = "Y",
-    Text = text,
-    Font = Configs_HUB.Text_Font,
-    BackgroundTransparency = 1,
-    AutomaticSize = Enum.AutomaticSize.Y,
-    TextWrapped = true
-  })
-  
-  local FrameSize = Create("Frame", Frame2, {
-    Size = UDim2.new(1, 0, 0, 2),
-    BackgroundColor3 = Configs_HUB.Cor_Stroke,
-    Position = UDim2.new(0, 2, 0, 30),
-    BorderSizePixel = 0
-  })Corner(FrameSize)Create("Frame", Frame2, {
-    Size = UDim2.new(0, 0, 0, 5),
-    Position = UDim2.new(0, 0, 1, 5),
-    BackgroundTransparency = 1
-  })
-  
-  task.spawn(function()
-    CreateTween(FrameSize, "Size", UDim2.new(0, 0, 0, 2), timewait, true)
-  end)
-  
-  TextButton.MouseButton1Click:Connect(function()
-    CreateTween(Frame2, "Position", UDim2.new(0, -20, 0, 0), 0.1, true)
-    CreateTween(Frame2, "Position", UDim2.new(0, Menu_Notifi.Size.X.Offset, 0, 0), 0.5, true)
-    Frame1:Destroy()
-  end)
-  
-  task.spawn(function()
-    CreateTween(Frame2, "Position", UDim2.new(0, -20, 0, 0), 0.5, true)
-    CreateTween(Frame2, "Position", UDim2.new(), 0.1, true)task.wait(timewait)
-    if Frame2 then
-      CreateTween(Frame2, "Position", UDim2.new(0, -20, 0, 0), 0.1, true)
-      CreateTween(Frame2, "Position", UDim2.new(0, Menu_Notifi.Size.X.Offset, 0, 0), 0.5, true)
-      Frame1:Destroy()
-    end
-  end)
-end
-
 function OrionLib:Destroy()
-	-- Désactiver tous les toggles
 	for _, Flag in pairs(OrionLib.Flags) do
 		if Flag.Type == "Toggle" and Flag.Value == true then
 			pcall(function() Flag:Set(false) end)
 		end
 	end
-	-- Déconnecter toutes les connections
 	for _, Connection in next, OrionLib.Connections do
 		pcall(function() Connection:Disconnect() end)
 	end
